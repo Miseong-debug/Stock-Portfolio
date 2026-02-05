@@ -61,6 +61,7 @@ export interface StockPrice {
 export interface ExchangeRate {
   rate: number
   lastUpdated: string
+  source?: string // 환율 데이터 소스 (frankfurter, open.er-api 등)
 }
 
 // 포트폴리오 요약

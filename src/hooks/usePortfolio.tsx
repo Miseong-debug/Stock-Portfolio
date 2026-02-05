@@ -13,6 +13,7 @@ import {
   setManualExchangeRate,
   setCachedPrices,
   setCachedExchangeRate,
+  isExchangeRateCacheExpired,
 } from '@/lib/stock-api'
 
 export function usePortfolio() {
@@ -24,6 +25,7 @@ export function usePortfolio() {
   const [dividends, setDividends] = useState<Dividend[]>([])
   const [prices, setPrices] = useState<Record<string, StockPrice>>({})
   const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null)
+  const [exchangeRateError, setExchangeRateError] = useState(false)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -45,7 +47,16 @@ export function usePortfolio() {
 
       // 캐시된 시세 정보 로드
       setPrices(getCachedPrices())
-      setExchangeRate(getCachedExchangeRate())
+
+      // 환율: 캐시가 만료되었으면 새로 가져오기
+      if (isExchangeRateCacheExpired()) {
+        const result = await fetchExchangeRate()
+        setExchangeRate(result.data)
+        setExchangeRateError(result.error)
+      } else {
+        setExchangeRate(getCachedExchangeRate())
+        setExchangeRateError(false)
+      }
     } catch (error) {
       console.error('Failed to load data:', error)
     } finally {
@@ -66,8 +77,10 @@ export function usePortfolio() {
         const newPrices = await fetchMultipleStockPrices(tickers)
         setPrices((prev) => ({ ...prev, ...newPrices }))
       }
-      const newRate = await fetchExchangeRate()
-      if (newRate) setExchangeRate(newRate)
+      // 강제로 새 환율 가져오기
+      const result = await fetchExchangeRate(true)
+      setExchangeRate(result.data)
+      setExchangeRateError(result.error)
     } catch (error) {
       console.error('Failed to refresh prices:', error)
     } finally {
@@ -235,6 +248,7 @@ export function usePortfolio() {
     dividends,
     prices,
     exchangeRate,
+    exchangeRateError,
     summary,
     loading,
     refreshing,

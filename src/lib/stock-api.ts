@@ -2,6 +2,7 @@ import { StockPrice, ExchangeRate } from '@/types/database'
 
 const CACHE_KEY_PRICES = 'stock_prices_cache'
 const CACHE_KEY_EXCHANGE = 'exchange_rate_cache'
+const EXCHANGE_RATE_CACHE_DURATION = 60 * 60 * 1000 // 1시간 (밀리초)
 
 // 캐시에서 가격 정보 가져오기
 export function getCachedPrices(): Record<string, StockPrice> {
@@ -31,6 +32,16 @@ export function getCachedExchangeRate(): ExchangeRate | null {
   } catch {
     return null
   }
+}
+
+// 환율 캐시가 만료되었는지 확인 (1시간)
+export function isExchangeRateCacheExpired(): boolean {
+  const cached = getCachedExchangeRate()
+  if (!cached || !cached.lastUpdated) return true
+
+  const lastUpdated = new Date(cached.lastUpdated).getTime()
+  const now = Date.now()
+  return now - lastUpdated > EXCHANGE_RATE_CACHE_DURATION
 }
 
 // 캐시에 환율 정보 저장
@@ -99,37 +110,47 @@ export async function fetchMultipleStockPrices(tickers: string[]): Promise<Recor
   return results
 }
 
-// 환율 조회 (USD/KRW)
-export async function fetchExchangeRate(): Promise<ExchangeRate | null> {
+// 환율 조회 결과 타입
+export interface ExchangeRateResult {
+  data: ExchangeRate | null
+  error: boolean
+  fromCache: boolean
+}
+
+// 환율 조회 (USD/KRW) - 서버사이드 API 라우트 사용
+export async function fetchExchangeRate(forceRefresh = false): Promise<ExchangeRateResult> {
+  // 캐시가 유효하고 강제 새로고침이 아니면 캐시 사용
+  if (!forceRefresh && !isExchangeRateCacheExpired()) {
+    const cached = getCachedExchangeRate()
+    if (cached) {
+      return { data: cached, error: false, fromCache: true }
+    }
+  }
+
   try {
-    // exchangerate-api.com 무료 티어 사용
-    const response = await fetch(
-      'https://api.exchangerate-api.com/v4/latest/USD'
-    )
+    const response = await fetch('/api/exchange-rate')
 
     if (!response.ok) {
       throw new Error('Failed to fetch exchange rate')
     }
 
     const data = await response.json()
-    const rate = data.rates?.KRW
-
-    if (!rate) {
-      return null
-    }
 
     const exchangeRate: ExchangeRate = {
-      rate,
-      lastUpdated: new Date().toISOString(),
+      rate: data.rate,
+      source: data.source,
+      lastUpdated: data.lastUpdated,
     }
 
     // 캐시 업데이트
     setCachedExchangeRate(exchangeRate)
 
-    return exchangeRate
+    return { data: exchangeRate, error: false, fromCache: false }
   } catch (error) {
     console.error('Failed to fetch exchange rate:', error)
-    return null
+    // 실패 시 캐시된 값 반환
+    const cached = getCachedExchangeRate()
+    return { data: cached, error: true, fromCache: true }
   }
 }
 

@@ -1,11 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, ArrowLeftRight } from 'lucide-react'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import { useToast } from '@/components/Toast'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -53,80 +52,70 @@ export default function TransactionsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">거래내역</h1>
-        <Button onClick={() => setSheetOpen(true)} className="h-11 px-4 text-base">
-          <Plus className="mr-1 h-5 w-5" />
+        <h1 className="text-xl font-bold text-foreground">거래내역</h1>
+        <Button onClick={() => setSheetOpen(true)} className="h-10 px-4">
+          <Plus className="mr-1 h-4 w-4" />
           추가
         </Button>
       </div>
 
       {transactions.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <p className="text-lg">거래내역이 없습니다.</p>
-            <p className="mt-2">상단의 추가 버튼을 눌러 거래를 기록해보세요.</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl bg-card p-8 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/20">
+            <ArrowLeftRight className="h-8 w-8 text-primary" />
+          </div>
+          <p className="text-lg font-medium text-foreground">거래내역이 없습니다</p>
+          <p className="mt-2 text-sm text-muted-foreground">상단의 추가 버튼을 눌러 거래를 기록해보세요.</p>
+        </div>
       ) : (
         <div className="space-y-4">
           {Object.entries(groupedByMonth).map(([month, txs]) => (
             <div key={month}>
-              <h2 className="mb-3 text-base font-semibold text-muted-foreground">{month}</h2>
-              <div className="space-y-3">
+              <h2 className="mb-3 text-xs font-semibold text-muted-foreground">{month}</h2>
+              <div className="space-y-2">
                 {txs.map((tx) => {
                   const isBuy = tx.tx_type === 'buy'
                   const totalUSD = Number(tx.quantity) * Number(tx.price)
                   const totalKRW = totalUSD * Number(tx.exchange_rate)
 
                   return (
-                    <Card key={tx.id}>
-                      <CardContent className="py-4">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Badge
-                                className={cn(
-                                  'text-sm',
-                                  isBuy ? 'bg-profit text-white' : 'bg-loss text-white'
-                                )}
-                              >
-                                {isBuy ? '매수' : '매도'}
-                              </Badge>
-                              <span className="text-lg font-bold">{tx.ticker}</span>
-                              {tx.company_name && (
-                                <span className="text-sm text-muted-foreground">{tx.company_name}</span>
-                              )}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {format(parseISO(tx.tx_date), 'yyyy.MM.dd')} ·{' '}
-                              {Number(tx.quantity).toLocaleString()}주 × {formatUSD(Number(tx.price))}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              환율 ₩{Number(tx.exchange_rate).toLocaleString()}
-                            </div>
-                            {tx.memo && (
-                              <div className="text-sm text-muted-foreground">{tx.memo}</div>
+                    <div key={tx.id} className="flex items-center justify-between rounded-xl bg-card p-4">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          'flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold',
+                          isBuy ? 'bg-profit-light text-profit' : 'bg-loss-light text-loss'
+                        )}>
+                          {isBuy ? '매수' : '매도'}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-foreground">{tx.ticker}</span>
+                            {tx.company_name && (
+                              <span className="text-xs text-muted-foreground">{tx.company_name}</span>
                             )}
                           </div>
-                          <div className="flex items-start gap-2">
-                            <div className="text-right">
-                              <div className="text-lg font-bold tabular-nums">{formatUSD(totalUSD)}</div>
-                              <div className="text-sm text-muted-foreground tabular-nums">
-                                {formatKRW(totalKRW)}
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-10 w-10 text-destructive"
-                              onClick={() => handleDeleteClick(tx.id, tx.ticker)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                          <div className="text-xs text-muted-foreground">
+                            {format(parseISO(tx.tx_date), 'MM.dd')} · {Number(tx.quantity).toLocaleString()}주 × {formatUSD(Number(tx.price))}
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <div className="text-sm font-semibold text-foreground tabular-nums">{formatUSD(totalUSD)}</div>
+                          <div className="text-xs text-muted-foreground tabular-nums">
+                            {formatKRW(totalKRW)}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => handleDeleteClick(tx.id, tx.ticker)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   )
                 })}
               </div>
@@ -219,17 +208,17 @@ function TransactionSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-auto max-h-[90vh] overflow-y-auto">
+      <SheetContent side="bottom" className="h-auto max-h-[90vh] overflow-y-auto rounded-t-2xl bg-card">
         <SheetHeader>
-          <SheetTitle className="text-lg">거래내역 추가</SheetTitle>
+          <SheetTitle className="text-foreground">거래내역 추가</SheetTitle>
         </SheetHeader>
         <div className="mt-4 space-y-4">
           <Tabs value={txType} onValueChange={(v) => setTxType(v as 'buy' | 'sell')}>
-            <TabsList className="grid w-full grid-cols-2 h-12">
-              <TabsTrigger value="buy" className="text-base data-[state=active]:bg-profit data-[state=active]:text-white">
+            <TabsList className="grid w-full grid-cols-2 bg-secondary/50 p-1 rounded-xl h-12">
+              <TabsTrigger value="buy" className="rounded-lg text-sm data-[state=active]:bg-profit data-[state=active]:text-white">
                 매수
               </TabsTrigger>
-              <TabsTrigger value="sell" className="text-base data-[state=active]:bg-loss data-[state=active]:text-white">
+              <TabsTrigger value="sell" className="rounded-lg text-sm data-[state=active]:bg-loss data-[state=active]:text-white">
                 매도
               </TabsTrigger>
             </TabsList>
@@ -237,14 +226,14 @@ function TransactionSheet({
 
           {/* 빠른 티커 선택 */}
           <div className="space-y-2">
-            <Label className="text-base">자주 사용하는 종목</Label>
+            <Label className="text-xs text-muted-foreground">자주 사용하는 종목</Label>
             <div className="flex flex-wrap gap-2">
               {POPULAR_TICKERS.map((t) => (
                 <Button
                   key={t}
                   variant={ticker === t ? 'default' : 'outline'}
                   size="sm"
-                  className="h-10 px-4"
+                  className="h-9 px-3"
                   onClick={() => setTicker(t)}
                 >
                   {t}
@@ -255,97 +244,97 @@ function TransactionSheet({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-base">티커 *</Label>
+              <Label className="text-xs text-muted-foreground">티커 *</Label>
               <Input
                 placeholder="AAPL"
                 value={ticker}
                 onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                className="h-12 text-lg uppercase"
+                className="h-12 text-base uppercase"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-base">회사명</Label>
+              <Label className="text-xs text-muted-foreground">회사명</Label>
               <Input
                 placeholder="Apple Inc."
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                className="h-12 text-lg"
+                className="h-12 text-base"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-base">수량 *</Label>
+              <Label className="text-xs text-muted-foreground">수량 *</Label>
               <Input
                 type="number"
                 inputMode="decimal"
                 placeholder="10"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
-                className="h-12 text-lg"
+                className="h-12 text-base"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-base">단가 ($) *</Label>
+              <Label className="text-xs text-muted-foreground">단가 ($) *</Label>
               <Input
                 type="number"
                 inputMode="decimal"
                 placeholder="150.00"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                className="h-12 text-lg"
+                className="h-12 text-base"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-base">환율 (원/$) *</Label>
+              <Label className="text-xs text-muted-foreground">환율 (원/$) *</Label>
               <Input
                 type="number"
                 inputMode="decimal"
                 placeholder="1350"
                 value={exchangeRateValue}
                 onChange={(e) => setExchangeRateValue(e.target.value)}
-                className="h-12 text-lg"
+                className="h-12 text-base"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-base">거래일 *</Label>
+              <Label className="text-xs text-muted-foreground">거래일 *</Label>
               <Input
                 type="date"
                 value={txDate}
                 onChange={(e) => setTxDate(e.target.value)}
-                className="h-12 text-lg"
+                className="h-12 text-base"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-base">메모</Label>
+            <Label className="text-xs text-muted-foreground">메모</Label>
             <Input
               placeholder="메모 (선택사항)"
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
-              className="h-12 text-lg"
+              className="h-12 text-base"
             />
           </div>
 
           {totalUSD > 0 && (
-            <div className="rounded-lg bg-muted/50 p-4">
-              <div className="text-sm text-muted-foreground">{txType === 'buy' ? '매수' : '매도'}금액</div>
-              <div className="text-xl font-bold">
+            <div className="rounded-xl bg-secondary/50 p-4">
+              <p className="text-xs text-muted-foreground">{txType === 'buy' ? '매수' : '매도'}금액</p>
+              <p className="mt-1 text-xl font-bold text-foreground tabular-nums">
                 {formatUSD(totalUSD)}
-              </div>
-              <div className="text-lg text-muted-foreground">
+              </p>
+              <p className="text-sm text-muted-foreground tabular-nums">
                 = {formatKRW(totalKRW)}
-              </div>
+              </p>
             </div>
           )}
 
           <Button
-            className="h-14 w-full text-lg"
+            className="h-12 w-full text-base"
             onClick={handleSubmit}
             disabled={saving || !ticker || !quantity || !price || !exchangeRateValue || !txDate}
           >

@@ -5,7 +5,6 @@ import { Plus, Trash2, Coins } from 'lucide-react'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import { useToast } from '@/components/Toast'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -62,103 +61,103 @@ export default function DividendsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">배당금</h1>
-        <Button onClick={() => setSheetOpen(true)} className="h-11 px-4 text-base">
-          <Plus className="mr-1 h-5 w-5" />
+        <h1 className="text-xl font-bold text-foreground">배당금</h1>
+        <Button onClick={() => setSheetOpen(true)} className="h-10 px-4">
+          <Plus className="mr-1 h-4 w-4" />
           추가
         </Button>
       </div>
 
       {/* 총 배당금 요약 */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Coins className="h-5 w-5" />
-            총 배당 수입
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold tabular-nums text-profit">
-            {formatUSD(summary.totalDividends)}
-          </div>
-          <div className="text-lg text-muted-foreground tabular-nums">
-            {formatKRW(totalDividendsKRW)}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <Coins className="h-5 w-5 text-primary" />
+          <span className="text-sm font-medium text-muted-foreground">총 배당 수입</span>
+        </div>
+        <div className="text-3xl font-bold text-foreground tabular-nums">
+          {formatUSD(summary.totalDividends)}
+        </div>
+        <div className="text-base text-muted-foreground tabular-nums mt-1">
+          {formatKRW(totalDividendsKRW)}
+        </div>
+      </div>
 
       {dividends.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <p className="text-lg">배당금 기록이 없습니다.</p>
-            <p className="mt-2">상단의 추가 버튼을 눌러 배당금을 기록해보세요.</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl bg-card p-8 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/20">
+            <Coins className="h-8 w-8 text-primary" />
+          </div>
+          <p className="text-lg font-medium text-foreground">배당금 기록이 없습니다</p>
+          <p className="mt-2 text-sm text-muted-foreground">상단의 추가 버튼을 눌러 배당금을 기록해보세요.</p>
+        </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {Object.values(groupedByTicker).map((group) => (
-            <Card key={group.ticker}>
-              <CardContent className="py-4">
-                {/* 헤더 */}
-                <div className="flex items-center justify-between border-b pb-3 mb-3">
+            <div key={group.ticker} className="rounded-xl bg-card p-4">
+              {/* 헤더 */}
+              <div className="flex items-center justify-between border-b border-border pb-3 mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-xs font-bold text-foreground">
+                    {group.ticker.slice(0, 2)}
+                  </div>
                   <div>
-                    <span className="text-lg font-bold">{group.ticker}</span>
+                    <span className="text-sm font-semibold text-foreground">{group.ticker}</span>
                     {group.company_name && (
-                      <span className="ml-2 text-sm text-muted-foreground">{group.company_name}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">{group.company_name}</span>
                     )}
                   </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold tabular-nums text-profit">{formatUSD(group.total)}</div>
-                    <div className="text-sm text-muted-foreground">{group.dividends.length}건</div>
-                  </div>
                 </div>
+                <div className="text-right">
+                  <div className="text-sm font-semibold text-primary tabular-nums">{formatUSD(group.total)}</div>
+                  <div className="text-xs text-muted-foreground">{group.dividends.length}건</div>
+                </div>
+              </div>
 
-                {/* 배당금 목록 */}
-                <div className="space-y-3">
-                  {group.dividends.map((div) => {
-                    const rate = div.exchange_rate || currentRate
-                    const amountKRW = Number(div.amount) * Number(rate)
+              {/* 배당금 목록 */}
+              <div className="space-y-2">
+                {group.dividends.map((div) => {
+                  const rate = div.exchange_rate || currentRate
+                  const amountKRW = Number(div.amount) * Number(rate)
 
-                    return (
-                      <div
-                        key={div.id}
-                        className="flex items-center justify-between rounded-lg bg-muted/50 p-3"
-                      >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-sm">
-                              {format(parseISO(div.received_date), 'yyyy.MM.dd')}
-                            </Badge>
-                            <span className="font-semibold tabular-nums">{formatUSD(Number(div.amount))}</span>
-                            {div.exchange_rate && (
-                              <span className="text-sm text-muted-foreground">
-                                @₩{Number(div.exchange_rate).toLocaleString()}
-                              </span>
-                            )}
-                          </div>
-                          {div.memo && (
-                            <div className="text-sm text-muted-foreground">{div.memo}</div>
+                  return (
+                    <div
+                      key={div.id}
+                      className="flex items-center justify-between rounded-lg bg-secondary/30 p-3"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            {format(parseISO(div.received_date), 'yyyy.MM.dd')}
+                          </Badge>
+                          <span className="text-sm font-medium text-primary tabular-nums">{formatUSD(Number(div.amount))}</span>
+                          {div.exchange_rate && (
+                            <span className="text-xs text-muted-foreground">
+                              @₩{Number(div.exchange_rate).toLocaleString()}
+                            </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground tabular-nums">
-                            {formatKRW(amountKRW)}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10 text-destructive"
-                            onClick={() => handleDeleteClick(div.id, div.ticker)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        {div.memo && (
+                          <div className="text-xs text-muted-foreground">{div.memo}</div>
+                        )}
                       </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {formatKRW(amountKRW)}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => handleDeleteClick(div.id, div.ticker)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -241,21 +240,21 @@ function DividendSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-auto max-h-[90vh] overflow-y-auto">
+      <SheetContent side="bottom" className="h-auto max-h-[90vh] overflow-y-auto rounded-t-2xl bg-card">
         <SheetHeader>
-          <SheetTitle className="text-lg">배당금 추가</SheetTitle>
+          <SheetTitle className="text-foreground">배당금 추가</SheetTitle>
         </SheetHeader>
         <div className="mt-4 space-y-4">
           {/* 빠른 티커 선택 */}
           <div className="space-y-2">
-            <Label className="text-base">자주 사용하는 종목</Label>
+            <Label className="text-xs text-muted-foreground">자주 사용하는 종목</Label>
             <div className="flex flex-wrap gap-2">
               {POPULAR_TICKERS.map((t) => (
                 <Button
                   key={t}
                   variant={ticker === t ? 'default' : 'outline'}
                   size="sm"
-                  className="h-10 px-4"
+                  className="h-9 px-3"
                   onClick={() => setTicker(t)}
                 >
                   {t}
@@ -266,84 +265,84 @@ function DividendSheet({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-base">티커 *</Label>
+              <Label className="text-xs text-muted-foreground">티커 *</Label>
               <Input
                 placeholder="AAPL"
                 value={ticker}
                 onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                className="h-12 text-lg uppercase"
+                className="h-12 text-base uppercase"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-base">회사명</Label>
+              <Label className="text-xs text-muted-foreground">회사명</Label>
               <Input
                 placeholder="Apple Inc."
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                className="h-12 text-lg"
+                className="h-12 text-base"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-base">배당금액 ($) *</Label>
+              <Label className="text-xs text-muted-foreground">배당금액 ($) *</Label>
               <Input
                 type="number"
                 inputMode="decimal"
                 placeholder="12.50"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="h-12 text-lg"
+                className="h-12 text-base"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-base">환율 (원/$)</Label>
+              <Label className="text-xs text-muted-foreground">환율 (원/$)</Label>
               <Input
                 type="number"
                 inputMode="decimal"
                 placeholder={currentRate.toString()}
                 value={exchangeRateValue}
                 onChange={(e) => setExchangeRateValue(e.target.value)}
-                className="h-12 text-lg"
+                className="h-12 text-base"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-base">수령일 *</Label>
+            <Label className="text-xs text-muted-foreground">수령일 *</Label>
             <Input
               type="date"
               value={receivedDate}
               onChange={(e) => setReceivedDate(e.target.value)}
-              className="h-12 text-lg"
+              className="h-12 text-base"
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-base">메모</Label>
+            <Label className="text-xs text-muted-foreground">메모</Label>
             <Input
               placeholder="메모 (선택사항)"
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
-              className="h-12 text-lg"
+              className="h-12 text-base"
             />
           </div>
 
           {amountKRW > 0 && (
-            <div className="rounded-lg bg-muted/50 p-4">
-              <div className="text-sm text-muted-foreground">원화 환산</div>
-              <div className="text-xl font-bold">
+            <div className="rounded-xl bg-secondary/50 p-4">
+              <p className="text-xs text-muted-foreground">원화 환산</p>
+              <p className="mt-1 text-xl font-bold text-foreground tabular-nums">
                 {formatUSD(Number(amount))}
-              </div>
-              <div className="text-lg text-muted-foreground">
+              </p>
+              <p className="text-sm text-muted-foreground tabular-nums">
                 = {formatKRW(amountKRW)}
-              </div>
+              </p>
             </div>
           )}
 
           <Button
-            className="h-14 w-full text-lg"
+            className="h-12 w-full text-base"
             onClick={handleSubmit}
             disabled={saving || !ticker || !amount || !receivedDate}
           >
