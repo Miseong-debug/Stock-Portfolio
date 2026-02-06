@@ -164,7 +164,7 @@ export default function HoldingsPage() {
                                 <span className="text-sm font-medium text-foreground">{qty.toLocaleString()}주</span>
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                매수가 {formatUSD(buyPrice)} · 환율 ₩{buyRate.toLocaleString()}
+                                매수가 {formatUSD(buyPrice)} · 매수환율 ₩{buyRate.toLocaleString()}
                               </div>
                               {holding.memo && (
                                 <div className="text-xs text-muted-foreground">{holding.memo}</div>
@@ -198,12 +198,12 @@ export default function HoldingsPage() {
                               {isLotProfit ? '+' : ''}{formatPercent(lotReturnRate)}
                             </span>
                           </div>
-                          <div className="mt-1 flex gap-3 text-xs">
+                          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs">
                             <span className={cn('tabular-nums', lotProfitUSD >= 0 ? 'text-profit' : 'text-loss')}>
-                              주가수익 {lotProfitUSD >= 0 ? '+' : ''}{formatKRW(lotProfitUSD * buyRate)}
+                              {lotProfitUSD >= 0 ? '+' : ''}{formatKRW(lotProfitUSD * buyRate)} (주가수익)
                             </span>
                             <span className={cn('tabular-nums', exchangeProfit >= 0 ? 'text-profit' : 'text-loss')}>
-                              환차익 {exchangeProfit >= 0 ? '+' : ''}{formatKRW(exchangeProfit)}
+                              {exchangeProfit >= 0 ? '+' : ''}{formatKRW(exchangeProfit)} ({exchangeProfit >= 0 ? '환차익' : '환차손'})
                             </span>
                           </div>
                         </div>

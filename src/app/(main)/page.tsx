@@ -264,7 +264,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className={cn('rounded-xl p-4', summary.exchangeProfit >= 0 ? 'bg-profit-light' : 'bg-loss-light')}>
-          <p className="text-xs text-muted-foreground">환차익</p>
+          <p className="text-xs text-muted-foreground">{summary.exchangeProfit >= 0 ? '환차익' : '환차손'}</p>
           <p className={cn('mt-1 text-lg font-semibold tabular-nums', summary.exchangeProfit >= 0 ? 'text-profit' : 'text-loss')}>
             {summary.exchangeProfit >= 0 ? '+' : ''}{formatKRW(summary.exchangeProfit)}
           </p>
