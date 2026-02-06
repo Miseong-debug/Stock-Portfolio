@@ -5,13 +5,17 @@ import { ThemeProvider } from '@/hooks/useTheme'
 import { ToastProvider } from '@/components/Toast'
 
 export const metadata: Metadata = {
-  title: '주식 포트폴리오',
+  title: '내 포트폴리오',
   description: '미국 주식 포트폴리오 관리',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.png',
+    apple: '/apple-touch-icon.png',
+  },
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
-    title: '주식 포트폴리오',
+    statusBarStyle: 'black-translucent',
+    title: '내 포트폴리오',
   },
 }
 
