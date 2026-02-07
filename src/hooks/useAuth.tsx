@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react'
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase'
 import {
@@ -25,6 +25,7 @@ interface AuthContextType {
   authState: AuthState
   failedAttempts: number
   lockoutSeconds: number
+  autoLoginError: string | null
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
@@ -32,6 +33,7 @@ interface AuthContextType {
   checkPin: (pin: string) => Promise<boolean>
   changePin: (currentPin: string, newPin: string) => Promise<boolean>
   resetPinWithPassword: () => void
+  retryAutoLogin: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -43,6 +45,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [failedAttempts, setFailedAttempts] = useState(0)
   const [lockoutSeconds, setLockoutSeconds] = useState(0)
   const [pinVerified, setPinVerified] = useState(false)
+  const [autoLoginError, setAutoLoginError] = useState<string | null>(null)
+  const autoLoginAttempted = useRef(false)
+
+  // 환경변수로 자동 로그인
+  const autoLogin = async (): Promise<boolean> => {
+    const autoEmail = process.env.NEXT_PUBLIC_AUTO_EMAIL
+    const autoPassword = process.env.NEXT_PUBLIC_AUTO_PASSWORD
+    if (!autoEmail || !autoPassword) return false
+    const supabase = createClient()
+    const { error } = await supabase.auth.signInWithPassword({
+      email: autoEmail,
+      password: autoPassword,
+    })
+    return !error
+  }
+
+  // need_login 상태일 때 자동 로그인 시도
+  useEffect(() => {
+    if (authState === 'need_login' && !autoLoginAttempted.current) {
+      autoLoginAttempted.current = true
+      setAutoLoginError(null)
+      autoLogin().then((success) => {
+        if (!success) {
+          setAutoLoginError('자동 로그인에 실패했습니다.')
+        }
+        // 성공 시 onAuthStateChange가 상태를 업데이트함
+      })
+    }
+  }, [authState])
 
   // 잠금 카운트다운
   useEffect(() => {
@@ -167,6 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = createClient()
     await supabase.auth.signOut()
     setPinVerified(false)
+    autoLoginAttempted.current = false
   }
 
   const setupPin = async (pin: string) => {
@@ -196,8 +228,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session) {
         setAuthState('authenticated')
       } else {
-        // 세션 만료됨, 재로그인 필요
-        setAuthState('need_login')
+        // 세션 만료, 자동 재로그인 시도
+        const success = await autoLogin()
+        if (success) {
+          setAuthState('authenticated')
+        } else {
+          setAuthState('need_login')
+        }
       }
       return true
     } else {
@@ -220,6 +257,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPinWithPassword = () => {
     clearPin()
+    autoLoginAttempted.current = false
+    if (user) {
+      // 세션이 있으면 바로 PIN 재설정
+      setAuthState('need_pin_setup')
+    } else {
+      // 세션 없으면 자동 로그인 후 PIN 설정으로
+      setAuthState('need_login')
+    }
+  }
+
+  const retryAutoLogin = () => {
+    autoLoginAttempted.current = false
+    setAutoLoginError(null)
     setAuthState('need_login')
   }
 
@@ -231,6 +281,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authState,
         failedAttempts,
         lockoutSeconds,
+        autoLoginError,
         signIn,
         signUp,
         signOut,
@@ -238,6 +289,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         checkPin,
         changePin,
         resetPinWithPassword,
+        retryAutoLogin,
       }}
     >
       {children}

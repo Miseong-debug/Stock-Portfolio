@@ -3,30 +3,22 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PinPad } from '@/components/PinPad'
+import { Button } from '@/components/ui/button'
 
 export default function LoginPage() {
   const {
     authState,
     failedAttempts,
     lockoutSeconds,
-    signIn,
-    signUp,
+    autoLoginError,
     setupPin,
     checkPin,
     resetPinWithPassword,
+    retryAutoLogin,
   } = useAuth()
   const router = useRouter()
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
   const [pinError, setPinError] = useState<string | null>(null)
   const [pinStep, setPinStep] = useState<'first' | 'confirm'>('first')
   const [firstPin, setFirstPin] = useState('')
@@ -37,31 +29,6 @@ export default function LoginPage() {
       router.push('/')
     }
   }, [authState, router])
-
-  const handleLogin = async (type: 'login' | 'signup') => {
-    setError(null)
-    setLoading(true)
-
-    try {
-      const { error } = type === 'login'
-        ? await signIn(email, password)
-        : await signUp(email, password)
-
-      if (error) {
-        if (error.message.includes('Invalid login')) {
-          setError('이메일 또는 비밀번호가 올바르지 않습니다.')
-        } else if (error.message.includes('already registered')) {
-          setError('이미 등록된 이메일입니다.')
-        } else {
-          setError(error.message)
-        }
-      }
-    } catch {
-      setError('오류가 발생했습니다.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   // PIN 설정 핸들러
   const handlePinSetup = useCallback(async (pin: string) => {
@@ -88,11 +55,24 @@ export default function LoginPage() {
     }
   }, [checkPin])
 
-  // 로딩 중
-  if (authState === 'loading') {
+  // 로딩 또는 자동 로그인 중
+  if (authState === 'loading' || (authState === 'need_login' && !autoLoginError)) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-muted-foreground">로딩 중...</div>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p className="text-sm text-muted-foreground">
+          {authState === 'loading' ? '로딩 중...' : '자동 로그인 중...'}
+        </p>
+      </div>
+    )
+  }
+
+  // 자동 로그인 실패
+  if (authState === 'need_login' && autoLoginError) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-4">
+        <p className="text-sm text-destructive">{autoLoginError}</p>
+        <Button onClick={retryAutoLogin}>다시 시도</Button>
       </div>
     )
   }
@@ -139,83 +119,5 @@ export default function LoginPage() {
     )
   }
 
-  // 이메일/비밀번호 로그인 화면
-  return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">주식 포트폴리오</CardTitle>
-          <CardDescription>미국 주식 포트폴리오를 관리하세요</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">로그인</TabsTrigger>
-              <TabsTrigger value="signup">회원가입</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email-login">이메일</Label>
-                <Input
-                  id="email-login"
-                  type="email"
-                  placeholder="이메일을 입력하세요"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password-login">비밀번호</Label>
-                <Input
-                  id="password-login"
-                  type="password"
-                  placeholder="비밀번호를 입력하세요"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button
-                className="w-full"
-                onClick={() => handleLogin('login')}
-                disabled={loading || !email || !password}
-              >
-                {loading ? '처리 중...' : '로그인'}
-              </Button>
-            </TabsContent>
-            <TabsContent value="signup" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email-signup">이메일</Label>
-                <Input
-                  id="email-signup"
-                  type="email"
-                  placeholder="이메일을 입력하세요"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password-signup">비밀번호</Label>
-                <Input
-                  id="password-signup"
-                  type="password"
-                  placeholder="비밀번호를 입력하세요 (6자 이상)"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button
-                className="w-full"
-                onClick={() => handleLogin('signup')}
-                disabled={loading || !email || password.length < 6}
-              >
-                {loading ? '처리 중...' : '회원가입'}
-              </Button>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
-  )
+  return null
 }
